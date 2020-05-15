@@ -12,3 +12,4 @@ It is written in Typescript and Visual Studio Code. It is based on the https://g
 
 In the root package.JSON file you will find the thingworxServer, User and Password used when using the upload task.
 
+This Extension is provided as-is and without warranty or support. It is not part of the PTC product suite. Users are free to use, fork and modify them at their own risk. Community contributions are welcomed and can be accepted based on their content.
