@@ -70,6 +70,7 @@
         eClassVersion: string;
         eClassClassification: string;
         eClassIrdi: string;
+        mxGraphShape: string;
         refId: string;
         nozzles: Nozzle[];
         subElement?: Shape;

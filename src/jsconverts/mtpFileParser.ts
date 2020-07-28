@@ -1,7 +1,9 @@
 
 import * as JD from "./mtpJsonDefs"
 
-
+/**
+ * @deprecated MTP specific logic has been outsourced to ThingWorx, will be removed soon
+ */
 export class MtpFileParser {
 
     public async loadFile(filePath: string): Promise<JD.HmiDiagram> {
@@ -11,7 +13,7 @@ export class MtpFileParser {
             const xmlData = new DOMParser().parseFromString(responseText, "text/xml");
             return this.parseMtpXml(xmlData);
         } catch (e) {
-            console.error("Failed to load MTP")
+            console.error(`Failed to load MTP [Reason: ${e.message}, FilePath: ${filePath}]`)
             throw e;
         }
     }
@@ -65,6 +67,7 @@ export class MtpFileParser {
             eClassClassification: this.getAttributeTagValue(element, "eClassClassificationClass", false)!="0"?this.getAttributeTagValue(element, "eClassClassificationClass", false):this.getAttributeTagValue(element, "ViewType", false),
             eClassIrdi: this.getAttributeTagValue(element, "eClassIRDI", false),
             refId: this.getAttributeTagValue(element, "RefID", false),
+            mxGraphShape: "",
             id: element.getAttribute("ID")!,
             name: element.getAttribute("Name")!,
             width: this.getAttributeTagValue(element, "Width", true),
@@ -97,7 +100,7 @@ export class MtpFileParser {
         }
 
         // we need to now search for the communication
-        let communicationElementAttr = file.evaluate(`//InstanceHierarchy[@Name="ModuleTypePackage"]//InternalElement[@Name="Communication"]` +
+        let communicationElementAttr = file.evaluate(`//InstanceHierarchy[@Name="ModuleTypePackage"]//InternalElement[@Name="CommunicationSet"]` +
             `/InternalElement[@Name="InstanceList"]//Attribute[@Name="RefID"][Value="${visualElement.refId}"]`,
             file, null, XPathResult.ANY_TYPE, null).iterateNext();
         let communicationElement = communicationElementAttr ? communicationElementAttr.parentElement : undefined;
@@ -111,7 +114,7 @@ export class MtpFileParser {
                 if (attrElement.nodeName == "Attribute" && attrElement.getAttribute("Node") != "RefID") {
                     let attrValue = attrElement.getElementsByTagName("Value")[0].textContent;
                     // search for this attribute in the communication lib
-                    let sourceCommunicationElement = file.querySelector(`InstanceHierarchy[Name="ModuleTypePackage"] InternalElement[Name="Communication"] ` +
+                    let sourceCommunicationElement = file.querySelector(`InstanceHierarchy[Name="ModuleTypePackage"] InternalElement[Name="CommunicationSet"] ` +
                         `InternalElement[Name="SourceList"]  ExternalInterface[ID="${attrValue}"]`);
                     if (sourceCommunicationElement) {
                         interfaceList.push({

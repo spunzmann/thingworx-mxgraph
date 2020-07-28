@@ -1,5 +1,5 @@
 import {execute} from "./jsconverts/shapeCatalogue"
-import {MtpFileParser} from "./jsconverts/mtpFileParser"
+import {MtpInfoTableParser} from "./jsconverts/mtpInfoTableParser"
 import * as MtpJsonToMxGraph from "./jsconverts/mtpJsonToMxGraph"
 import { mxgraph } from "./generic/mxGraphImport"
 
@@ -8,10 +8,9 @@ TW.Runtime.Widgets.mxdiagram = function () {
     let valueProcessDiagramLoader, xmlDiagramLoader;
     let diagramWdg: any;
     //added by Vladimir from the MTPFileController.js
-    let fileLoader: MtpFileParser;
+    let infoTableParser: MtpInfoTableParser;
     let diagramRenderer: MtpJsonToMxGraph.MtpJsonToMxGraph;
-    let eClassShapeMap: any = {};
-    let graph: any;
+    let mxGraphObject: any;
     //end section variable declaration
 
     // a list of resources that are hold by the current graph
@@ -26,9 +25,9 @@ TW.Runtime.Widgets.mxdiagram = function () {
     window["MtpJsonToMxGraph"] = MtpJsonToMxGraph;
 
     interface Window {
-        MtpFileParser: typeof MtpFileParser
+        MtpInfoTableParser: typeof MtpInfoTableParser
     }
-    window["MtpFileParser"] = MtpFileParser;
+    window["MtpInfoTableParser"] = MtpInfoTableParser;
     //Finish section mptFileParser. ts
     
     this.initializeResponsiveContainer = function (element: HTMLElement) {
@@ -139,14 +138,14 @@ TW.Runtime.Widgets.mxdiagram = function () {
         diagramRenderer.initGraph(newGraph);
         newGraph.refresh();
         newGraph.getView().revalidate();
-        graph = newGraph;
+        mxGraphObject = newGraph;
          }
     }
 
     this.updateProperty = async function (updatePropertyInfo) {
         this.setProperty(updatePropertyInfo.TargetProperty, updatePropertyInfo.RawDataFromInvoke);
         switch (updatePropertyInfo.TargetProperty) {
-            case 'ValueDiagram':
+            case 'ValueDiagram': {
                 if (!valueProcessDiagramLoader) {
                     valueProcessDiagramLoader = await import('./value_process/mxValueProcessDiagram');
                 }
@@ -155,6 +154,7 @@ TW.Runtime.Widgets.mxdiagram = function () {
                 let currentGraph = valueProcessDiagramLoader.createValueProcessDiagram(container, updatePropertyInfo.RawDataFromInvoke);
                 this.setNewActiveGraph(currentGraph);
                 break;
+            }
             case 'XMLDiagram': {
                 if (!xmlDiagramLoader) {
                     xmlDiagramLoader = await import('./xml_codec/mxGraphXmlDiagram');
@@ -191,56 +191,62 @@ TW.Runtime.Widgets.mxdiagram = function () {
 
                 break;
             }
-            case "MTPFilePath":
-                {
-                    var str_MTPFilePath = updatePropertyInfo.SinglePropertyValue;
-                    if (!fileLoader) {
-                        // add all of mxgraph to window
-                        for (const key in diagramWdg.mxGraphNamespace.mxgraph) {
-                            if (diagramWdg.mxGraphNamespace.mxgraph.hasOwnProperty(key)) {
-                                window[key] = diagramWdg.mxGraphNamespace.mxgraph[key]
-                            }
+            case "MTPInfotable": {
+                let iftbl_MTP_HMI = updatePropertyInfo.ActualDataRows;
+
+                if (!infoTableParser) {
+                    // add all of mxgraph to window
+                    for (const key in diagramWdg.mxGraphNamespace.mxgraph) {
+                        if (diagramWdg.mxGraphNamespace.mxgraph.hasOwnProperty(key)) {
+                            window[key] = diagramWdg.mxGraphNamespace.mxgraph[key]
                         }
-                        fileLoader = new MtpFileParser();
-                        diagramRenderer = new MtpJsonToMxGraph.MtpJsonToMxGraph(diagramWdg.mxGraphNamespace.mxgraph, diagramWdg.jqElement[0], eClassShapeMap);
-                        //we populate the MXGraph shape list property that allows getting all the stencil names
-                        this.setProperty("MXGraphShapeList",this.getStencilNames(MtpJsonToMxGraph.STENCIL_LIST.map((el) => { return MtpJsonToMxGraph.STENCIL_PATH + el })));
-                        diagramWdg.execute();
                     }
-                    diagramWdg.resetCurrentGraph();
-                    // load the xml file and parse it into a document
-                    let diagram = await fileLoader.loadFile(`/Thingworx/FileRepositories/MtpFileRepository/${str_MTPFilePath}`);
-                    graph = diagramRenderer.drawMpt(diagram);
-                    this.setProperty("mtpJson",JSON.stringify(diagram));
-                    diagramWdg.setNewActiveGraph(graph);
+                    infoTableParser = new MtpInfoTableParser();
+                    diagramRenderer = new MtpJsonToMxGraph.MtpJsonToMxGraph(diagramWdg.mxGraphNamespace.mxgraph, diagramWdg.jqElement[0]);
+                    //we populate the MXGraph shape list property that allows getting all the stencil names
+                    this.setProperty("MXGraphShapeList",this.getStencilNames(MtpJsonToMxGraph.STENCIL_LIST.map((el) => { return MtpJsonToMxGraph.STENCIL_PATH + el })));
+                    diagramWdg.execute();
+                }
+                diagramWdg.resetCurrentGraph();
+                
+                // By definition there should only be 1 entry in this array, so let's pick the first one
+                if (iftbl_MTP_HMI && Array.isArray(iftbl_MTP_HMI)) {
+                    let mtpHmiDefinition = iftbl_MTP_HMI[0];
+                    
+                    // TODO: We have an InfoTable JSON here at our disposal (not sure how it is passed in STRING or JSON), let's figure that out...
+                    let diagramObjectJson = mtpHmiDefinition;
+                    let diagramObject = await infoTableParser.parse(mtpHmiDefinition); 
+                    mxGraphObject = diagramRenderer.drawMpt(diagramObject);
+                    
+                    console.info(`Generated MXGraph Model`);
+                    console.info(`+ Elements  : ${diagramObject.elements.length}`);
+                    console.info(`+ Pipes     : ${diagramObject.pipes.length}`);
+                    console.info(`+ Dimension : ${diagramObject.height} x ${diagramObject.width}`);
+                    console.info(`+ JSON      : ${diagramObjectJson}`);
+                    // console.debug(`+ XML       : ${this.mxGraphUtils.exportGraphAsXml(mxGraphObject)}`);
+                    
+                    diagramWdg.setNewActiveGraph(mxGraphObject);
                     diagramWdg.serviceInvoked("GenerateXML");
-                    break;
+                    
+                    this.setProperty("mtpJson", diagramObjectJson);
                 }
-            case "ShapeMapping":
-                {
-                    var iftbl_Mappings = updatePropertyInfo.ActualDataRows;
-                    for (var z=0;z<iftbl_Mappings.length;z++) {
-                        var row = iftbl_Mappings[z];
-                        eClassShapeMap[row.eclass] = row.mxgraphShape;
+                break;
+            }
+            case "MTPData": {
+                if (!mxGraphObject) {
+                    return;
+                }
+                var iftbl_Data = updatePropertyInfo.ActualDataRows;
+                for (const row of iftbl_Data) {
+                    let cell = mxGraphObject.getModel().getCell(row.elementId);
+                    if (cell && cell.hasAttribute("label")) {
+                        cell.setAttribute("value", isNaN(row.value) ? row.value : parseFloat(row.value).toFixed(2));
+                        mxGraphObject.getModel().setValue(cell, cell.value);
+                        
                     }
-                    break;
                 }
-                case "MTPData":
-                        {
-                            if (!graph) {
-                                return;
-                            }
-                            var iftbl_Data = updatePropertyInfo.ActualDataRows;
-                            for (const row of iftbl_Data) {
-                                let cell = graph.getModel().getCell(row.elementId);
-                                if (cell && cell.hasAttribute("label")) {
-                                    cell.setAttribute("value", isNaN(row.value) ? row.value : parseFloat(row.value).toFixed(2));
-                                    graph.getModel().setValue(cell, cell.value);
-                                    
-                                }
-                            }
-                            break;
-                        }
+                break;
+            }
         }
     }
 

@@ -1,12 +1,12 @@
 {
     "name": "mxdiagram",
-    "version": "0.0.301",
+    "version": "1.0.123",
     "description": "Widget to display draw.io diagrams or value process diagrams",
     "thingworxServer": "http:",
     "thingworxUser": "",
     "thingworxPassword": "",
-    "author": "Thingworx RoIcenter",
-    "minimumThingWorxVersion": "6.0.0",
+    "author": "Rockwell",
+    "minimumThingWorxVersion": "9.0.0",
     "homepage": "http://roicentersvn/placatus/MxGraphDiagramWidget",
     "autoUpdate": {
         "giteaURL": "http://roicentersvn/api/v1/repos/placatus/MxGraphDiagramWidget/releases/latest"

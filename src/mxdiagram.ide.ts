@@ -45,11 +45,10 @@ TW.IDE.Widgets.mxdiagram = function () {
                     'isBindingTarget': true,
                     'isBindingSource': true
                 },
-                'MTPFilePath': {
-                    'description': 'The path to the MTP file. Must be the name from result of the GetFileListing',
-                    'baseType': 'STRING',
+                'MTPInfotable': {
+                    'description': 'An standardized / sanitized infotable representing MTP HMI content',
+                    'baseType': 'INFOTABLE',
                     'isVisible': true,
-                    'defaultValue': "{}",
                     'isBindingTarget': true,
                     'isBindingSource': false
                 },
@@ -60,14 +59,6 @@ TW.IDE.Widgets.mxdiagram = function () {
                     'defaultValue': "{}",
                     'isBindingTarget': true,
                     'isBindingSource': true
-                },
-                'ShapeMapping' : {
-                    'description': 'mappings between eclass and mxgraphshapes',
-                    'baseType': 'INFOTABLE',
-                    'isVisible': true,
-                   
-                    'isBindingTarget': true,
-                    'isBindingSource': false
                 },
                 'MTPData' : {
                     'description': 'the actual data that will be displayed in labels in the UI',

@@ -1,4 +1,4 @@
-window["mxImageBasePath"] =  "../Common/extensions/mxdiagram_ExtensionPackage/ui/mxdiagram/mxgraph/images";
+window["mxImageBasePath"] = "../Common/extensions/mxdiagram_ExtensionPackage/ui/mxdiagram/mxgraph/images";
 window["mxBasePath"] = "../Common/extensions/mxdiagram_ExtensionPackage/ui/mxdiagram/mxgraph"
 
 export let mxgraph = require('jjgraph');
@@ -16,7 +16,7 @@ mxgraph.mxCodec.prototype.decode = function (node, into) {
         try {
             ctor = mxgraph[node.nodeName];
             // maybe we are dealing with a window object like Array. 
-            if(!ctor) {
+            if (!ctor) {
                 ctor = window[node.nodeName];
             }
         }

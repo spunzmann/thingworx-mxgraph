@@ -10,37 +10,31 @@ export const STENCIL_LIST = ['agitators.xml', 'apparatus_elements.xml', 'agitato
     import * as JD from "./mtpJsonDefs"
 
     
-    /**
+/**
  * A MtpFileLoader handles loading a mtp file from the given link, 
  * parsing it into an mxgraph graph object and retring it.
  */
 export class MtpJsonToMxGraph {
     private mxgraph: any;
     private container: HTMLElement;
-    private shapeMap: { [key: string]: string };
     /**
      *  Intializes the MtpFileLoader with the mxgraph namespace
      */
-    constructor(mxGraphNamespace: any, container: HTMLElement, shapeMap: { [key: string]: string }) {
+    constructor(mxGraphNamespace: any, container: HTMLElement) {
         this.mxgraph = mxGraphNamespace;
         this.container = container;
         // load all the stencils
         this.loadStencilFiles(STENCIL_LIST.map((el) => { return STENCIL_PATH + el }));
-        this.shapeMap = shapeMap;
     }
 
     public drawMpt(mtpDiagram: JD.HmiDiagram): any {
         try {
-            
             let graph = this.initGraph(new this.mxgraph.mxGraph(this.container));
-            // draw the pipes
             this.drawPipes(graph, graph.getDefaultParent(), mtpDiagram.pipes);
-            // draw the elements
             this.drawElements(graph, graph.getDefaultParent(), mtpDiagram.elements);
-
             return graph;
         } catch (e) {
-            console.error("Failed to draw mxgraph for MTP")
+            console.error(`Failed to draw mxgraph for MTP [Reason: ${e.message}]`)
             throw e;
         }
     }
@@ -57,23 +51,58 @@ export class MtpJsonToMxGraph {
               /*   graph.insertVertex(parent, element.obj.id, element.obj.name, element.obj.subElement.x - elementOffsetX, element.obj.subElement.y - elementOffsetY,
                     element.obj.subElement.width, element.obj.subElement.height, `element;shape=${this.shapeMap[element.obj.eClassClassification]};rotation=${element.obj.rotation}`);
               */
-                        graph.insertVertex(parent, element.obj.id, element.obj.name, element.obj.x , element.obj.y ,
-                            element.obj.width, element.obj.height, `element;shape=${this.shapeMap[element.obj.eClassClassification]};rotation=${element.obj.rotation}`);
+                graph.insertVertex(
+                    parent,
+                    element.obj.id, 
+                    element.obj.name, 
+                    element.obj.x, 
+                    element.obj.y,
+                    element.obj.width, 
+                    element.obj.height, 
+                    `element;shape=${element.obj.mxGraphShape};rotation=${element.obj.rotation}`
+                );
             } else {
-                // if we don't have a subelement, draw the visual object directly
-                graph.insertVertex(parent, element.obj.id, element.obj.name, element.obj.x, element.obj.y,
-                    element.obj.width, element.obj.height, `element;shape=${this.shapeMap[element.obj.eClassClassification]}`);
+                // if we don't have a sub-element, draw the visual object directly
+                graph.insertVertex(
+                    parent,
+                    element.obj.id,
+                    element.obj.name, 
+                    element.obj.x, 
+                    element.obj.y,
+                    element.obj.width, 
+                    element.obj.height, 
+                    `element;shape=${element.obj.mxGraphShape};rotation=${element.obj.rotation}`
+                );
             }
+
             if (element.communication) {
                 // draw the parent first 
-                let elParent = graph.insertVertex(parent, element.communication.id, element.communication.name, element.obj.x, element.obj.y,
-                    element.obj.width, element.obj.height, "swimlane;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;collapsible=1;resizeParentMax=0;resizeLast=0;");
+                let elParent = graph.insertVertex(
+                    parent, 
+                    element.communication.id, 
+                    element.communication.name, 
+                    element.obj.x, 
+                    element.obj.y,
+                    element.obj.width, 
+                    element.obj.height, 
+                    "swimlane;childLayout=stackLayout;horizontal=1;startSize=26;horizontalStack=0;resizeParent=1;collapsible=1;resizeParentMax=0;resizeLast=0;"
+                );
                 elParent.collapsed = true;
+
                 // if we have communication elements, draw them in the container
-                for (const commInterface of element.communication.interfaces) {
+                for (const communicationIfc of element.communication.interfaces) {
                     let value = document.createElement("Value");
-                    value.setAttribute('label', commInterface.name);
-                    let cell = graph.insertVertex(elParent, commInterface.id, value, 0, 0, element.obj.width, 20, "interfaceValue");
+                    value.setAttribute('label', communicationIfc.name);
+                    let cell = graph.insertVertex(
+                        elParent, 
+                        communicationIfc.id, 
+                        value, 
+                        0, 
+                        0, 
+                        element.obj.width, 
+                        20, 
+                        "interfaceValue"
+                    );
                 }
             }
         }
